@@ -28,6 +28,11 @@ You can and should cross-reference sections and sub-sections. For instance, Sect
 
 # Data
 
+Paragraph or two introducing the dataset broadly.
+
+Then show an extract of the dataset.
+# TODO: Look at lecture for Rohan's syntax on showing a data extract. Also for other tips.
+
 Our data is of penguins (Figure \@ref(fig:bills)).
 
 ```{r bills, fig.cap="Bills of penguins", echo = FALSE}

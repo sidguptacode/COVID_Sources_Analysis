@@ -13,21 +13,32 @@
 
 #### Workspace setup ####
 # Use R Projects, not setwd().
-library(haven)
+#install.packages("opendatatoronto")
+#install.packages("haven")
 library(tidyverse)
-# Read in the raw data. 
-raw_data <- readr::read_csv("inputs/data/raw_data.csv"
-                     )
-# Just keep some variables that may be of interest (change 
-# this depending on your interests)
-names(raw_data)
+library(opendatatoronto)
 
-reduced_data <- 
-  raw_data %>% 
-  select(first_col, 
-         second_col)
-rm(raw_data)
-         
+
+#### Data download ####
+# From https://open.toronto.ca/dataset/toronto-shelter-system-flow/
+
+# Datasets are grouped into 'packages' that have multiple datasets
+# also called 'resources' that are relevant to that topic. So we first look at the package
+# using a unique key that we obtain from the datasets webpage (see above).
+
+# get all resources for this package
+resources <- list_package_resources("ac77f532-f18b-427c-905c-4ae87ce69c93")
+
+# We need the unique key from that list of resources
+# There is only one resource and so get_resource() will load that.
+# If there is more than one resource then need to either filter or specify
+monthly_shelter_usage <- 
+  resources %>% 
+  get_resource()
+
+
+#### Save data ####
+write_csv(monthly_shelter_usage, "inputs/data/monthly_shelter_usage.csv")
 
 #### What's next? ####
 
