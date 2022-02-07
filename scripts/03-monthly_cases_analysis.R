@@ -13,4 +13,3 @@ reported_data_noinfo_prop_sorted <- head(reported_data_noinfo_prop_sorted,-1)
 
 reported_data_noinfo_prop_sorted
 counts_for_reported_date
-normalize_dfs_and_barplot(counts_for_reported_date, "n", reported_data_noinfo_prop_sorted, "prop", "reported_date") 
