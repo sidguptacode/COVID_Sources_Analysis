@@ -1,6 +1,6 @@
 <h1 align="center"> Unpacking why almost half of COVID-19 cases in Toronto have no information about their source </h1>
 <h1 align="center">
-  <img width="300" height="300" src="opening.png">
+  <img width="500" height="300" src="opening.png">
 </h1>
 <h2 align="center"> Authors </h2>
 <center>

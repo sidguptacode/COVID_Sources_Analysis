@@ -1,9 +1,9 @@
 ---
-title: "TODO: CITE R: Unpacking why almost half of COVID-19 cases in Toronto have no information about their source"
+title: "Unpacking why almost half of COVID-19 cases in Toronto have no information about their source"
 subtitle: "Investigating possible data collection biases using patient demographics"
 author: 
   - Sidharth Gupta
-thanks: "Code and data are available at: TODO."
+thanks: "Code and data are available at: https://github.com/sidguptacode/COVID_Sources_Analysis"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 abstract: "Data about the sources of COVID-19 infection can be used to guide epidemic and lockdown policies as the pandemic evolves; however almost half of COVID-19 cases in Toronto have no information about their source. In this paper we analyze the patient demographics of these cases with no information, and when they occur. We identify both groups of patients and time-points in the pandemic where there is a large proportion of cases with no source information. Our results can be used to improve the current methods for collecting data about COVID-19 cases in Toronto and other regions so that more sources of infection can be identified."
 output:
@@ -78,34 +78,38 @@ kable(covid_cases_all_sources,
 
 The described data collection process has many venues for biases to be introduced, and we will discuss three such biases. The first centers around traffic in different Public Health Units (PHUs). The recorded COVID-19 cases come from individual PHUs across the neighbourhoods of Toronto, and in an unbiased dataset, each COVID-19 case would contain equal information even if it was processed in a different PHU. However, different PHUs receive different amounts of traffic, especially during months when the pandemic shows a high surge of cases. Labour shortages in healthcare is a well-known issue in metropolitan cities that has been severely affected by COVID-19 [@Mascha2020], and as such different PHUs may not have equal capacities to handle noise in data collection, or even collect fields like the source of infection at all. A second venue for bias comes with the process of identifying the sources of COVID-19 infection through human interactions. Symptoms for COVID-19 can occur several days after the virus is initially contracted, and so asking a patient where they think the source of infection depends entirely on their own memory and comfort levels. Several studies in cognitive psychology [@Bard20152016] have shown that human memory is unreliable and irrational, and distrust can sway decision making [@distrust]. The third bias digs deeper in the issues of trust; even if a patient is confident about the source of their infection, they may not feel comfortable sharing that information. Some lockdown policies have legal consequences if they are not followed, and so some patients may fear the potential consequences that come with sharing their information. We would expect to see higher levels of distrust in low-income neighbourhoods, because those are often populated by people who are most vulnerable to legal consequences.
 
-Starting with the first bias of traffic in PHUs, we can explore how surges in cases influence the proportion of cases with no information about the source.
+We will now describe our data analysis pipeline for investigating these proposed biases, implemented using the R programming language [@citeR]. We start by exploring how surges in cases influence the proportion of cases with no information about the source. We load the whole dataset using the R Tidyverse library [@thereferencecanbewhatever], and clean the table headers using the R janitor library [@janitor], the forcats library [@forcats], and the wrapr libarry [@wrapr]. Next, we use the R tidyr library [@tidyr] and dplyr library [@dplyr] to select the records in the dataset that contain no information about the source, and store those records in a new smaller data frame. In both data frames, we use the lubridate library [@lubridate] to count the number of records that occur in a given month. We then divide the counts of the smaller data frame by the total data frame to get a proportion of cases per month where there is no information about the source. We normalize the proportion values in the smaller data frame, and the count values in the total dataframe, and create a stacked bar plot of those normalized values using the ggmap library [@ggmap]. Our resulting stacked bar chart is shown in Figure \@ref(fig:cases-timepoints-plot), compiled using the knitr library [@knitr]. The results in Figure \@ref(fig:cases-timepoints-plot) show a surge in proportions right before a surge in case counts, indicating that right before a peak in cases, participants are unlikely to give information about their source of infection. This can make sense, as the time before these peaks brings upon a lot of uncertainty for many people, and also for many healthcare workers who must prepare for a new forcasted demand of cases.
 
 ```{r, echo = FALSE, message=FALSE}
 source(here::here("scripts/03-monthly_cases_analysis.R"), local = knitr::knit_global())
 ```
 
-```{r cases-timepoints-plot, echo = FALSE, message=FALSE, fig.cap="TODO", warning=FALSE}
-normalize_dfs_and_barplot(counts_for_reported_date, "n", reported_data_noinfo_prop_sorted, "prop", "reported_date", "Month and year", " Normalized case count / proportion", "Lowest-30 neighbourhoods for responding with no source information against income index", TRUE, TRUE) 
+```{r cases-timepoints-plot, echo = FALSE, message=FALSE, fig.cap="Visualizing normalized total COVID-19 case counts (in blue) with normalized proportions of cases with no information (in red).", warning=FALSE}
+normalize_dfs_and_barplot(counts_for_reported_date, "n", reported_data_noinfo_prop_sorted, "prop", "reported_date", "Month and year", " Normalized case count / proportion", "Visualizing proportions against time", TRUE, TRUE) 
 ```
+
+Our second analysis visualizes the proportion of source information for different age groups. Using the with records containing no source information, we count the number of records belonging to each age group, and again divide the results with the total case counts for each age group, visualizing the results in Figure \@ref(fig:age-group-graph). If we exclude the group of ages 19 years and younger, we can see that the proportion of cases with no source monotonically decreases as the age groups increase. This can provide support to the argument of distrust as a data bias, for older age groups stand more to gain from telling information about the source, because that information can be used for their treatment of the virus. Younger groups are less affected by the virus physically, and so they may not require the treatment benefits from telling the truth.
 
 ```{r, echo = FALSE, message=FALSE, warning=FALSE}
 source(here::here("scripts/04-age_analysis.R"), local = knitr::knit_global())
 ```
 
-```{r, echo = FALSE, message=FALSE, warning=FALSE}
+```{r, age-group-graph, echo = FALSE, message=FALSE, warning=FALSE, fig.cap="Visualizing the proportion of cases with no source per age group."}
 single_df_barplot(age_proportions_against_total, "age_group", "prop", "Age Group", "Proportion of cases with no source", "Age demographics of cases with no source")
 ```
+
+Our final analysis looks at the neighbourhoods in our proportion data frame. We take the top 30 neighbourhoods with highest proportions of no source information, and cross-reference the income indices of thos neighbourhoods. The results are visualized in Figure \@ref(fig:top-no-info-plot). The same process is done for the bottom 30 neighbourhoods -- neighbourhoods that often provide source information -- against their income indices, shown in Figure \@ref(fig:bot-no-info-plot). In Figure\@ref(fig:top-no-info-plot), we can see that many of the neighbourhoods have an income index below 0.25. We do not observe this behaviour in Figure \@ref(bot-no-info-plot), for most of the normalized income indices are close to 0.5. This finding indeed suggests that the economic status of neighbourhoods is indeed a factor for collecting data about the source of infections, and should be taken into consideration at PHUs in those regions.
 
 ```{r, echo = FALSE, message=FALSE}
 source(here::here("scripts/05-neighbourhood_income_analysis.R"), local = knitr::knit_global())
 ```
 
-```{r top-no-info-plot, echo = FALSE, message=FALSE, fig.cap="TODO", warning=FALSE}
-normalize_dfs_and_barplot(top_noinfo_neighbs, "prop", income_data_of_topneighbs_df, "income_index", "neighbourhood_name","Neighbourhood", "Normalized income index / proportion", "Top-30 neighbourhoods for responding with no source information against income index", FALSE, FALSE) 
+```{r top-no-info-plot, echo = FALSE, message=FALSE, fig.cap="Comparing the income indices of the top 30 neighbourhoods with high proportions of no source information.", warning=FALSE}
+normalize_dfs_and_barplot(top_noinfo_neighbs, "prop", income_data_of_topneighbs_df, "income_index", "neighbourhood_name","Neighbourhood", "Normalized income index / proportion", "Top-30 neighbourhoods responding with no source against income", FALSE, FALSE) 
 ```
 
-```{r bot-no-info-plot, echo = FALSE, message=FALSE, fig.cap="TODO", warning=FALSE}
-normalize_dfs_and_barplot(bottom_noinfo_neighbs, "prop", income_data_of_botneighbs_df, "income_index", "neighbourhood_name", "Income Index", " Neighbourhood", "Bottom-30 neighbourhoods for responding with no source information against income index", FALSE, FALSE) 
+```{r bot-no-info-plot, echo = FALSE, message=FALSE, warning=FALSE, fig.cap="Comparing the income indices of the bottom 30 neighbourhoods with high proportions of no source information."}
+normalize_dfs_and_barplot(bottom_noinfo_neighbs, "prop", income_data_of_botneighbs_df, "income_index", "neighbourhood_name", "Income Index", " Neighbourhood", "Bottom-30 neighbourhoods responding with no source against income", FALSE, FALSE) 
 ```
 
 

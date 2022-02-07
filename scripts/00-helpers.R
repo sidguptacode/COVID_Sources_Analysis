@@ -94,7 +94,7 @@ get_prop_against_total <- function(total_table, sub_table, col, should_sort) {
 }
 
 
-single_df_barplot <- function(df, xcol, ycol, title, xlab, ylab) {
+single_df_barplot <- function(df, xcol, ycol, xlab, ylab, title) {
     ###   Intakes a dataframe with two columns representing x, y values, and plots a bar plot.
     ###   Arguments and preconditions:
     ###   df: a tibble dataframe
@@ -196,7 +196,7 @@ normalize_dfs_and_barplot <- function(df1, ycol1, df2, ycol2, xcol, xlab, ylab,t
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
     ggtitle(title) +
     xlab(xlab) + 
-    ylab(ylab)
+    ylab(ylab) +
     ylim(0,1)
 }
 
