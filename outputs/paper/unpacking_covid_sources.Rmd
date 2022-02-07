@@ -47,7 +47,6 @@ source("../../scripts/00-helpers.R", local = knitr::knit_global())
 # cases_with_info: all records in covid_cases_clean with information about their source of infection.
 # cases_no_info: all records in covid_cases_clean without information about their source of infection.
 # income_data: a dataframe that maps neighbourhoods to low-income index.
-#source(here::here("scripts/01-data_download.R"), local = knitr::knit_global()) # TODO: Uncomment
 source(here::here("scripts/02-data_cleaning.R"), local = knitr::knit_global())
 ```
 
@@ -104,11 +103,11 @@ Our final analysis looks at the neighbourhoods in our proportion data frame. We 
 source(here::here("scripts/05-neighbourhood_income_analysis.R"), local = knitr::knit_global())
 ```
 
-```{r top-no-info-plot, echo = FALSE, message=FALSE, fig.cap="Comparing the income indices of the top 30 neighbourhoods with high proportions of no source information.", warning=FALSE}
+```{r top-no-info-plot, echo = FALSE, message=FALSE, fig.cap="Comparing the normalized income indices (in red) of the top 30 neighbourhoods with high proportions (in blue) of no source information.", warning=FALSE}
 normalize_dfs_and_barplot(top_noinfo_neighbs, "prop", income_data_of_topneighbs_df, "income_index", "neighbourhood_name","Neighbourhood", "Normalized income index / proportion", "Top-30 neighbourhoods responding with no source against income", FALSE, FALSE) 
 ```
 
-```{r bot-no-info-plot, echo = FALSE, message=FALSE, warning=FALSE, fig.cap="Comparing the income indices of the bottom 30 neighbourhoods with high proportions of no source information."}
+```{r bot-no-info-plot, echo = FALSE, message=FALSE, warning=FALSE, fig.cap="Comparing the income indices (in red) of the loweest 30 neighbourhoods with proportions (in blue) of no source information."}
 normalize_dfs_and_barplot(bottom_noinfo_neighbs, "prop", income_data_of_botneighbs_df, "income_index", "neighbourhood_name", "Income Index", " Neighbourhood", "Bottom-30 neighbourhoods responding with no source against income", FALSE, FALSE) 
 ```
 
