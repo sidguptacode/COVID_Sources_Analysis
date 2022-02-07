@@ -28,8 +28,7 @@ The algorithms and data analysis study is impemented in outputs/paper/unpacking_
 
 ### Processing scripts
 
-The algorithms and data analysis study is impemented in outputs/paper/unpacking_covid_sources.Rmd. You can run this file using RStudio.
-
+The scripts to process graphs and conduct analyses are in the scripts folder.
 
 ### More Details 
 View our paper at outputs/paper/unpacking_covid_sources.pdf for more information. 
