@@ -1,0 +1,224 @@
+---
+title: "COVID case data"
+author: "Sid Gupta"
+date: '2022-01-12'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+#install.packages("opendatatoronto")
+#install.packages("ggmap")
+library(ggmap)
+library(dplyr)
+library(forcats)
+library(knitr)
+library(janitor)
+library(lubridate)
+library(opendatatoronto)
+library(tidyverse)
+library(tidyr)
+
+```
+
+
+```{r}
+covid_cases <- read_csv("../inputs/data/COVID19_cases.csv")
+head(covid_cases)
+```
+
+```{r}
+covid_cases_clean <-
+  covid_cases |> 
+  clean_names()
+head(covid_cases_clean)
+```
+
+```{r}
+covid_cases_outbreak <-
+  covid_cases_clean |> 
+  filter(outbreak_associated == "Outbreak Associated")
+
+covid_cases_sporadic <-
+  covid_cases_clean |> 
+  filter(outbreak_associated == "Sporadic")
+```
+
+```{r}
+covid_cases_neighbs <-
+  covid_cases_clean |>
+  count(neighbourhood_name)# |>
+
+outbreak_neighbs <-
+  covid_cases_outbreak |>
+  count(neighbourhood_name)# |>
+head(outbreak_neighbs)
+```
+
+```{r}
+outbreak_settings <-
+  covid_cases_outbreak |>
+  count(source_of_infection) |>
+  mutate(n = n / sum(n))
+head(outbreak_settings)
+```
+```{r}
+sporadic_settings <-
+  covid_cases_sporadic |>
+  count(source_of_infection) |> 
+  mutate(n = n / sum(n))
+head(sporadic_settings)
+```
+```{r}
+covid_cases_agegroups <-
+  covid_cases_clean |>
+  count(age_group) |>
+  mutate(n = n / sum(n))
+head(covid_cases_agegroups)
+```
+
+```{r}
+covid_cases_outcomes <-
+  covid_cases_clean |>
+  count(outcome) |>
+  mutate(n = n / sum(n))
+head(covid_cases_outcomes)
+```
+
+```{r}
+covid_cases_outcomes <-
+  covid_cases_clean |>
+  count(outcome) |>
+  mutate(n = n / sum(n))
+head(covid_cases_outcomes)
+```
+
+
+```{r}
+covid_cases_cur_hosp <-
+  covid_cases_clean |>
+  count(currently_hospitalized) |>
+  mutate(n = n / sum(n))
+
+covid_cases_cur_icu <-
+  covid_cases_clean |>
+  count(currently_in_icu) |>
+  mutate(n = n / sum(n))
+
+covid_cases_intur <-
+  covid_cases_clean |>
+  count(currently_intubated) |>
+  mutate(n = n / sum(n))
+
+
+covid_cases_ever_hosp <-
+  covid_cases_clean |>
+  count(ever_hospitalized) |>
+  mutate(n = n / sum(n))
+
+covid_cases_ever_icu <-
+  covid_cases_clean |>
+  count(ever_in_icu) |>
+  mutate(n = n / sum(n))
+
+covid_cases_ever_intur <-
+  covid_cases_clean |>
+  count(ever_intubated) |>
+  mutate(n = n / sum(n))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+# us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
+# get_stamenmap(us, zoom = 5, maptype = "toner-lite") %>% ggmap() 
+
+# define helper
+`%notin%` <- function(lhs, rhs) !(lhs %in% rhs)
+
+# reduce crime to violent crimes in downtown houston
+violent_crimes <- crime %>% 
+  filter(
+    offense %notin% c("auto theft", "theft", "burglary"),
+    -95.39681 <= lon & lon <= -95.34188,
+     29.73631 <= lat & lat <=  29.78400
+  ) %>% 
+  mutate(
+    offense = fct_drop(offense),
+    offense = fct_relevel(offense, c("robbery", "aggravated assault", "rape", "murder"))
+  )
+#violent_crimes
+# use qmplot to make a scatterplot on a map
+##qmplot(address, data = violent_crimes, maptype = "toner-lite", color = I("red"))
+qmplot(lon, lat, data = crime)
+
+
+```
+```{r}
+?register_google
+```
+
+```{r}
+qmplot(79.3832, 43.6532, data = violent_crimes, maptype = "toner-lite", color = I("red"))
+
+```
+
+```{r}
+#### Explore ####
+toronto_shelters_clean <- 
+  read_csv(
+    "cleaned_toronto_shelters.csv",
+    show_col_types = FALSE
+    )
+```
+
+
+```{r}
+toronto_shelters_clean |>
+  mutate(occupancy_month = month(occupancy_date, 
+                                 label = TRUE, 
+                                 abbr = FALSE)) |>
+  drop_na(occupied_beds) |> # We only want rows that have data
+  group_by(occupancy_month) |> # We want to know the occupancy by month
+  summarize(number_occupied = mean(occupied_beds)) |>
+  kable()
+```
+
+
+```{r}
+toronto_shelters_clean |>
+  mutate(occupancy_month = month(occupancy_date, 
+                                 label = TRUE, 
+                                 abbr = FALSE)) |>
+  drop_na(occupied_beds) |> # We only want rows that have data
+  group_by(occupancy_month) |> # We want to know the occupancy by month
+  summarize(number_occupied = mean(occupied_beds)) |> 
+  kable(caption = "Homeless shelter usage in Toronto in 2021", 
+        col.names = c("Month", "Average daily number of occupied beds"),
+        digits = 1,
+        booktabs = TRUE,
+        linesep = ""
+        )
+```
+
+

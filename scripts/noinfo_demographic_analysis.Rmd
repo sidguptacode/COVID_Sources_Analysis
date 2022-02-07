@@ -1,0 +1,290 @@
+---
+title: "COVID case data"
+author: "Sid Gupta"
+date: '2022-01-12'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+# Import the required libraries for this project.
+#install.packages("opendatatoronto")
+#install.packages("ggmap")
+#install.packages("wrapr")
+library(ggmap)
+library(dplyr)
+library(forcats)
+library(knitr)
+library(janitor)
+library(lubridate)
+library(opendatatoronto)
+library(tidyverse)
+library(tidyr)
+library(wrapr)
+
+```
+
+```{r}
+# Read in the COVID19 cases dataset from opendatatoronto.
+covid_cases <- read_csv("../inputs/data/COVID19_cases.csv")
+```
+
+```{r}
+# Clean the dataset and convert the dates to R datetime objects that we can bin and compare.
+covid_cases_clean <-
+  covid_cases |> 
+  clean_names() |>
+  #mutate(episode_date = as_date(episode_date)) |>
+  #mutate(episode_date = format(episode_date, "%Y-%m")) |>
+  mutate(reported_date = as_date(episode_date)) |>
+  mutate(reported_date = format(reported_date, "%Y-%m"))
+```
+
+```{r}
+# Split the dataset into groups with and without information about the source of infection.
+cases_no_info <-
+  covid_cases_clean |>
+  filter(source_of_infection == 'No Information')
+
+cases_with_info <-
+  covid_cases_clean |>
+  filter(source_of_infection != 'No Information')
+```
+
+
+```{r}
+
+get_col_proportions <- function(table, col) {
+  table <- 
+    table |>
+    count(.data[[col]]) |>
+    mutate(n = n / sum(n)) |>
+    arrange(desc(n))
+  return(table)
+}
+
+print_col_proportions <- function(table) {
+  for (col in names(table)) {
+    col_proportions <- get_col_proportions(table, col)
+    print(col_proportions)
+  }
+}
+```
+
+```{r}
+print_col_proportions(covid_cases_clean)
+```
+
+```{r}
+print_col_proportions(cases_no_info)
+```
+
+```{r}
+print_col_proportions(cases_with_info)
+```
+
+
+```{r}
+
+compare_against_total <- function(total_table, sub_table, col, should_sort) {
+    total_col_count <-     
+      total_table |>
+      count(.data[[col]])
+    
+    sub_table_prop_of_total <-
+      sub_table |>
+      count(.data[[col]])
+    
+    # In some cases, total_col_count has values (such as dates) that do not exist in sub_table_prop_of_total.
+    # We want to add those values sub_table_prop_of_total with an n=0.
+    # TODO: Document
+    sub_res1 <- anti_join(total_col_count,sub_table_prop_of_total,by=c(col))
+    sub_res1$n <- 0
+    sub_table_prop_of_total <- full_join(sub_table_prop_of_total,sub_res1,by=c(col,"n"))
+
+    # Use match_order to make  sure the `col`s are aligned in these two dataframes.
+    #print(total_col_count[[col]])
+    #idx_total_table <- match_order(total_col_count[[col]], sub_table_prop_of_total[[col]])
+    idx_sub_table <- match_order(sub_table_prop_of_total[[col]], total_col_count[[col]])
+    # print(idx_total_table)
+    #print(idx_sub_table)
+    
+    #total_col_count <- total_col_count[idx_total_table,]
+    sub_table_prop_of_total <- sub_table_prop_of_total[idx_sub_table,]
+    
+    print(total_col_count)
+    print(sub_table_prop_of_total)
+    
+
+    # Divide the two dataframes. 
+    sub_table_prop_of_total <- cbind(sub_table_prop_of_total[1],round(sub_table_prop_of_total[-1]/total_col_count[-1],3))
+    
+    
+    if (should_sort) {
+      sub_table_prop_of_total <-
+        sub_table_prop_of_total |>
+        arrange(desc(n))
+    }
+    return(sub_table_prop_of_total)
+}
+
+```
+
+```{r}
+compare_against_total(covid_cases_clean, cases_no_info, 'age_group', FALSE)
+```
+
+```{r}
+neighborhood_props <- compare_against_total(covid_cases_clean, cases_no_info, 'neighbourhood_name', TRUE)
+```
+
+
+```{r}
+
+reported_data_noinfo_prop <- compare_against_total(covid_cases_clean, cases_no_info, 'reported_date', TRUE)
+print(reported_data_noinfo_prop)
+```
+
+```{r}
+
+# sort_dataframe_by_date <- function(df) {
+#   # "
+#   #   Sorts a dataframe by a (year, month) date column.
+#   #   Preconditions: the (year, month) date column is "reported_date"
+#   # "
+#   sorted_df_by_date <-
+#     df |>
+#     # To make the '(year, month)' date objects, we just let the day = 1.
+#     mutate(reported_date = as_date(paste(reported_date,"-01",sep=""))) |>
+#     # This sorts the dataframe by the date.
+#     arrange(reported_date) |>
+#     # Now that the dataframe is sorted, we can remove the 'day' information.  
+#     mutate(reported_date = format(reported_date, "%Y-%m"))
+#   return(sorted_df_by_date)
+# }
+
+# counts_for_reported_date <- 
+#   covid_cases_clean |> 
+#   count(reported_date)
+# 
+# counts_for_reported_date <- sort_dataframe_by_date(counts_for_reported_date)
+# print(counts_for_reported_date)
+# 
+# reported_data_noinfo_prop_sorted <- sort_dataframe_by_date(reported_data_noinfo_prop)
+# print(reported_data_noinfo_prop_sorted)
+
+
+sort_dataframe_by_date_colarg <- function(df, col) {
+  ###   Sorts a dataframe by a (year, month) date column.
+  ###   Arguments and preconditions:
+  ###   table: a tibble dataframe
+  ###   col: a character string representing a column in `table`.
+  ###   col must denote a (year, month) date column.
+  sorted_df_by_date <- df
+  # To make the '(year, month)' date objects, we just let the day = 1.
+  sorted_df_by_date[[col]] = as_date(paste(df[[col]],"-01",sep=""))
+  sorted_df_by_date <-
+    sorted_df_by_date |>
+    # This sorts the dataframe by the date.
+    arrange(reported_date)
+  # Now that the dataframe is sorted, we can remove the 'day' information.  
+  sorted_df_by_date[[col]] = format(sorted_df_by_date[[col]], "%Y-%m")
+  return(sorted_df_by_date)
+}
+
+counts_for_reported_date <-
+  covid_cases_clean |>
+  count(reported_date)
+
+counts_for_reported_date <- sort_dataframe_by_date_colarg(counts_for_reported_date, "reported_date")
+print(counts_for_reported_date)
+
+reported_data_noinfo_prop_sorted <- sort_dataframe_by_date_colarg(reported_data_noinfo_prop, "reported_date")
+print(reported_data_noinfo_prop_sorted)
+
+```
+```{r}
+# Draw a histogram for this sucker
+ggplot(counts_for_reported_date) + geom_bar(aes(x = reported_date, y = n), stat="identity") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+```{r}
+
+counts_for_reported_date_normalized <- 
+  counts_for_reported_date |> 
+  mutate(n = (n - min(n)) / max(n))
+
+print(counts_for_reported_date_normalized)
+
+reported_data_noinfo_prop_normalized <- 
+  reported_data_noinfo_prop_sorted |> 
+  mutate(n = (n- min(n)) / max(n))
+
+print(reported_data_noinfo_prop_normalized)
+```
+
+```{r}
+ggplot(data=counts_for_reported_date_normalized, aes(reported_date)) +
+  geom_bar(aes(y=counts_for_reported_date_normalized$n), stat="identity", position ="identity", alpha=.5, fill='lightblue', color='lightblue4') +
+  geom_bar(aes(y=reported_data_noinfo_prop_normalized$n), stat="identity", position="identity", alpha=.3, fill='pink', color='red') + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+
+```{r}
+income_data <- read_csv("../inputs/data/neighbourhood-profiles-2016-csv.csv")
+income_data <-
+  income_data |>
+  clean_names() |>
+  filter(topic == "Low income in 2015") |>
+  filter(characteristic == "18 to 64 years (%)")
+income_data
+
+```
+
+```{r}
+neighborhood_props <- compare_against_total(covid_cases_clean, cases_no_info, 'neighbourhood_name', TRUE)
+neighborhood_props <-
+  neighborhood_props |>
+  drop_na() |>
+  mutate(neighbourhood_name = tolower(str_replace_all(neighbourhood_name, " ", "_"))) |>
+  mutate(neighbourhood_name = str_replace_all(neighbourhood_name, "-", "_")) |>
+  mutate(neighbourhood_name = str_replace_all(neighbourhood_name, "\\.", "_")) |>
+  mutate(neighbourhood_name = str_replace_all(neighbourhood_name, "'", "_"))
+
+neighborhood_props_names <- neighborhood_props$neighbourhood_name
+neighborhood_props_names
+top_noinfo_neighbs <- top_n(neighborhood_props, 10)
+top_noinfo_neighbs_names <- top_noinfo_neighbs$neighbourhood_name
+top_noinfo_neighbs
+top_noinfo_neighbs_names
+```
+
+```{r}
+income_data_of_topneighbs <-
+  income_data[, top_noinfo_neighbs_names] |>
+  mutate_all(function(x) as.numeric(as.character(x))) |>
+  colMeans() |>
+  as.data.frame.list()
+income_values_of_topneighbs <- unlist(income_data_of_topneighbs[1,], use.names = FALSE)
+
+income_data_of_topneighbs_df <- 
+   data.frame(neighborhood = c(top_noinfo_neighbs_names), income_index=(income_values_of_topneighbs))
+income_data_of_topneighbs_df
+
+# TODO: Top-10 on LHS, bottom-10 on RHS
+ggplot(income_data_of_topneighbs_df) + geom_bar(aes(x = neighborhood, y = income_index), stat="identity") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+

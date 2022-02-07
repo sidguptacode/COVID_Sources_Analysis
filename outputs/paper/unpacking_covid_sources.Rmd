@@ -1,0 +1,227 @@
+---
+title: "TODO: CITE R: Unpacking why almost half of COVID-19 cases in Toronto have no information about their source"
+subtitle: "Identifying when information is not often given, and who is not giving it"
+author: 
+  - Sidharth Gupta
+thanks: "Code and data are available at: TODO."
+date: "`r format(Sys.time(), '%d %B %Y')`"
+abstract: "Data about the sources of COVID-19 infection can be used to guide epidemic and lockdown policies as the pandemic evolves; however almost half of COVID-19 cases in Toronto have no information about their source. In this paper we analyze the patient demographics of these cases with no information, and when they occur. We identify both groups of patients and time-points in the pandemic where there is a large proportion of cases with no source information. Our results can be used to improve the current methods for collecting data about COVID-19 cases in Toronto and other regions so that more sources of infection can be identified."
+output:
+  bookdown::pdf_document2
+toc: FALSE
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("bookdown")
+library(ggmap)
+library(dplyr)
+library(forcats)
+library(knitr)
+library(janitor)
+library(lubridate)
+library(opendatatoronto)
+library(tidyverse)
+library(tidyr)
+library(wrapr)
+```
+
+# Introduction
+
+The COVID-19 pandemic has made a major global and societal impact. From its beginning to this time of writing, there have over 390 million positive recorded cases of COVID-19. The virus has a contagion that is exponential in nature, and spreads easily in most indoor and close-contact settings. To counteract the rapid and dangerous spread of COVID-19, lockdown and social isolation policies are regularly reviewed and enforced. These lockdowns are effective in controlling the spread of COVID-19, however they have shown to create many societal, economic, and global mental health consequences. For instance, [@leandnguyen] found that lockdowns cause people to experience adverse psychological events, such as anxiety, disinterest, depression, and an overall reduction in mental health. [@brunolarue] analyzed that lockdowns in Canada impact low-income workers and vulnerable communities significantly with employment instability, and  [@kaurvibhu] discover that lockdowns reduce the ability to provide services for social causes such as homelessness. Many new methods have been introduced for improving lockdown design, such as modelling pandemic mobility with data [@mobility1],  and developing public health messaging systems [@Block2020]. These methods stem from the prevalent topic in the literature that lockdown strategies should be smart -- that is, they should minimize isolation consequences and maximize virus spread containment [@Wang2021, @Olivier2020]. Datasets that identify outstanding regions for COVID-19 spread are vital, because they can identify areas that most benefit from lockdown, and areas that least benefit. As of the time of this writing, the City of Toronto has been recording this kind of data from positive COVID-19 cases since the start of the pandemic. Each recorded COVID-19 case has a field that identifies the source of infection; however 42% of cases in this dataset have no information entered for this field. Such a large proportion of missing data about the source of infection significantly reduces this dataset's utility for aiding smart lockdown designs. Additionally, this large proportion of missing data suggests that there are flaws within the data collection process itself. Because this COVID-19 data is collected weekly and is used for high-stakes decision making, finding flaws in data collection and addressing them quickly is pivotal.
+
+In this paper, we analyze the groups... Second paragraph is about what was done and what was found.
+
+We find that ... Suggesting that we should do X... Y.. Z..
+
+The paper is structued as follows: Section \@ref(data) explains the data, Section \@ref(data) explains results... We finally conclude.
+
+# Data
+
+In this work we explore a dataset of COVID-19 cases in Toronto provided by the Open Data Toronto portal [@opendatatoronto]. The dataset is curated by the City of Toronto [@opendata_covid] and it is refreshed with new records on a weekly bases. The raw data comes from The Public Health Case and Contact Management (CCM) group, who collect COVID-19 case and outbreak from all of Ontario's Public Health Units at 1:00 P.M Eastern time each day [@covid]. The first row of the curated dataset are shown in Table \@ref(tab:first-row) and Table \@ref(tab:first-row-continued); some fields are not shown in these tables due to their rare occurrence. The focus of our paper will be the header for "Source of Infection". As stated in the dataset's technical guide [@covid_technical_guide], this field is determined by a public health investigator's assessment. If this assessment is absent, then other data fields may have been used to estimate the source of infection, such as if there a recorded household positive case. A breakdown of responses for this field is shown in Table \@ref(tab:source-dist-table). 
+
+```{r, echo = FALSE, message=FALSE}
+
+# Run the RScript which imports required helper functions for this project.
+source("../../scripts/00-helpers.R", local = knitr::knit_global())
+
+# Run the RScript for initial data cleaning. This script gives us the following dataframes to work with:
+# covid_cases_clean: all recorded COVID-19 cases
+# cases_with_info: all records in covid_cases_clean with information about their source of infection.
+# cases_no_info: all records in covid_cases_clean without information about their source of infection.
+# income_data: a dataframe that maps neighbourhoods to low-income index.
+#source(here::here("scripts/01-data_cleaning.R"), local = knitr::knit_global()) # TODO: Uncomment
+#### Clean the COVID and neighborhood datasets. ####
+covid_cases <- read_csv(here::here("inputs/data/covid_cases.csv"))
+neighb_profiles <- read_csv(here::here("inputs/data/neighb_profiles.csv"))
+# Clean the COVID dataset and convert the dates to R datetime objects that we can bin and compare.
+covid_cases_clean <-
+  covid_cases |>
+  clean_names() |>
+  mutate(reported_date = as_date(episode_date)) |>
+  mutate(reported_date = format(reported_date, "%Y-%m"))
+# Clean the neighborhood dataset and filter only the income index records for ages between (18, 64).
+# Those are the only records relevant to this study.
+income_data <-
+  neighb_profiles |>
+  clean_names() |>
+  filter(topic == "Low income in 2015") |>
+  filter(characteristic == "18 to 64 years (%)")
+
+####  Split the dataset into groups with and without information about the source of infection. ####
+cases_no_info <-
+  covid_cases_clean |>
+  filter(source_of_infection == 'No Information')
+
+cases_with_info <-
+  covid_cases_clean |>
+  filter(source_of_infection != 'No Information')
+
+covid_cases_all_sources <- get_col_proportions(covid_cases_clean, "source_of_infection")
+covid_cases_fields <- data.frame(field = names(covid_cases))
+```
+
+```{r first-row, echo = FALSE}
+knitr::kable(head(covid_cases[3:7], n=1),
+  booktabs=TRUE,
+  caption="One record in the COVID-19 cases data",
+  digits=2
+)
+```
+
+```{r first-row-continued, echo = FALSE}
+knitr::kable(head(covid_cases[8:12], n=1),
+  booktabs=TRUE,
+  caption="One record in the COVID-19 cases data, continued",
+  digits=2
+)
+```
+
+```{r source-dist-table, echo = FALSE, message=FALSE}
+kable(covid_cases_all_sources,
+  booktabs=TRUE,
+  caption="Distribution of each response to the Source of Infection field.",
+  col.names = c("Source of Infection", "Proportion of response against all cases"),
+  digits=2
+)
+```
+
+The described data collection process has many venues for biases to be introduced in this dataset, and we will discuss two such biases. The first centers around traffic in different Public Health Units (PHUs). The recorded COVID-19 cases come from individual PHUs across the neighbourhoods of Toronto, and in a perfect dataset, each COVID-19 case would contain equal information even if it was processed in a different PHU. However, different PHUs receive different amounts of traffic, especially during months when the pandemic shows a high surge of cases. Labour shortages in healthcare is a well-known issue in metropolitan cities that has been severely affected by COVID-19 [@Mascha2020], and as such different PHUs may not have equal capacities to handle noise in data collection, or even collect fields like the source of infection at all. A second venue for bias comes with the process of identifying the sources of COVID-19 infection through human interactions. Symptoms for COVID-19 can occur several days after the virus is initially contracted, and so asking a patient where they think the source of infection depends entirely on their own memory and comfort levels. Several studies in cognitive psychology [TODO, CITE, CITE] have shown human memory to be unreliable and irrational, and distrust to sway decision making [TODO, CITE]. With regards to trust, even if a patient is confident about the source of their infection, they may not feel comfortable sharing that information. Some lockdown policies have legal consequences if they are not followed, and so some patients may fear the potential consequences that come with sharing their information. We would expect to see higher levels of distrust in low-income neighbourhoods, because those are typically the people who are most vulnerable to legal consequences.
+
+We will thoroughly explore this dataset to learn more about how these biases exist in practice, and generate ideas on how to address them. Starting with the first bias of traffic in PHUs, we can explore how surges in cases influence the information given about the source of infection. 
+
+```{r}
+reported_data_noinfo_prop <- get_prop_against_total(covid_cases_clean, cases_no_info, 'reported_date', TRUE)
+
+counts_for_reported_date <-
+  covid_cases_clean |>
+  count(reported_date)
+
+counts_for_reported_date <- sort_df_by_date(counts_for_reported_date, "reported_date")
+reported_data_noinfo_prop_sorted <- sort_df_by_date(reported_data_noinfo_prop, "reported_date")
+
+# Remove data from the month of February
+counts_for_reported_date <- head(counts_for_reported_date,-1)
+reported_data_noinfo_prop_sorted <- head(reported_data_noinfo_prop_sorted,-1)
+
+reported_data_noinfo_prop_sorted
+counts_for_reported_date
+normalize_dfs_and_barplot(counts_for_reported_date, "n", reported_data_noinfo_prop_sorted, "prop", "reported_date") 
+```
+```{r}
+neighborhood_props <- get_prop_against_total(covid_cases_clean, cases_no_info, 'neighbourhood_name', TRUE)
+# Fixing some formatting errors with clean_names()
+neighborhood_props <-
+  neighborhood_props |>
+  drop_na() |>
+  mutate(neighbourhood_name = tolower(str_replace_all(neighbourhood_name, " ", "_"))) |>
+  mutate(neighbourhood_name = str_replace_all(neighbourhood_name, "-", "_")) |>
+  mutate(neighbourhood_name = str_replace_all(neighbourhood_name, "\\.", "_")) |>
+  mutate(neighbourhood_name = str_replace_all(neighbourhood_name, "'", "")) |>
+  mutate(neighbourhood_name = str_replace_all(neighbourhood_name, "__", "_")) |>
+  mutate(neighbourhood_name = str_replace_all(neighbourhood_name, "lamoreaux", "l_amoreaux")) |>
+  mutate(neighbourhood_name = str_replace_all(neighbourhood_name, "wexford/maryvale", "wexford_maryvale")) |>
+  mutate(neighbourhood_name = str_replace_all(neighbourhood_name, "tam_oshanter_sullivan", "tam_o_shanter_sullivan")) |>
+    mutate(neighbourhood_name = str_replace_all(neighbourhood_name, "oconnor", "o_connor")) |>
+  mutate(neighbourhood_name = str_replace_all(neighbourhood_name, "mimico_(includes_humber_bay_shores)", "mimico_includes_humber_bay_shores")) |>
+  mutate(neighbourhood_name = str_replace_all(neighbourhood_name, "briar_hill__belgravia", "briar_hill_belgravia")) |>
+  mutate(neighbourhood_name = str_replace_all(neighbourhood_name, "weston_pellam_park", "weston_pelham_park"))
+
+
+neighborhood_props_names <- neighborhood_props$neighbourhood_name
+neighborhood_props_names <- neighborhood_props_names[neighborhood_props_names != "mimico_(includes_humber_bay_shores)"]
+top_noinfo_neighbs <- top_n(neighborhood_props, 30)
+top_noinfo_neighbs_names <- top_noinfo_neighbs$neighbourhood_name
+botton_noinfo_neighbs <- top_n(neighborhood_props, -30)
+botton_noinfo_neighbs_names <-botton_noinfo_neighbs$neighbourhood_name
+
+top_noinfo_neighbs <- normalize_wrt_other_df(top_noinfo_neighbs, "prop", neighborhood_props, "prop")
+bottom_noinfo_neighbs <- normalize_wrt_other_df(botton_noinfo_neighbs, "prop", neighborhood_props, "prop")
+```
+
+```{r}
+
+income_data_of_allneighbs <-
+  income_data[, neighborhood_props_names] |>
+  mutate_all(function(x) as.numeric(as.character(x))) |>
+  colMeans() |>
+  as.data.frame.list()
+income_values_of_allneighbs <- unlist(income_data_of_allneighbs[1,], use.names = FALSE)
+income_data_of_allneighbs_df <- 
+   data.frame(neighbourhood_name = c(neighborhood_props_names), income_index=(income_values_of_allneighbs))
+
+income_data_of_topneighbs_df <-
+  income_data_of_allneighbs_df |>
+  filter(neighbourhood_name %in% top_noinfo_neighbs_names)
+income_data_of_topneighbs_df <- normalize_wrt_other_df(income_data_of_topneighbs_df, "income_index", income_data_of_allneighbs_df, "income_index")
+
+income_data_of_botneighbs_df <-
+  income_data_of_allneighbs_df |>
+  filter(neighbourhood_name %in% botton_noinfo_neighbs_names)
+income_data_of_botneighbs_df <- normalize_wrt_other_df(income_data_of_botneighbs_df, "income_index", income_data_of_allneighbs_df, "income_index")
+```
+
+```{r}
+normalize_dfs_and_barplot(top_noinfo_neighbs, "prop", income_data_of_topneighbs_df, "income_index", "neighbourhood_name", FALSE, FALSE) 
+normalize_dfs_and_barplot(bottom_noinfo_neighbs, "prop", income_data_of_botneighbs_df, "income_index", "neighbourhood_name", FALSE, FALSE) 
+```
+
+```{r}
+normalize_dfs_and_barplot(top_noinfo_neighbs, "prop", income_data_of_topneighbs_df, "income_index", "neighbourhood_name", FALSE, FALSE) 
+```
+
+<!-- # Results -->
+
+<!-- # Discussion -->
+
+<!-- ## First discussion point -->
+
+<!-- ## Second discussion point -->
+
+<!-- ## Third discussion point -->
+
+<!-- ## Weaknesses and next steps -->
+
+<!-- Weaknesses and next steps should also be included. -->
+
+<!-- - How these factors relate -->
+<!-- - Populations of neighbourhoods -->
+<!-- - yadayada -->
+
+<!-- \newpage -->
+
+<!-- \appendix -->
+
+<!-- # Appendix {-} -->
+
+
+<!-- # Additional details -->
+
+
+<!-- \newpage -->
+
+
+# References
+
+
