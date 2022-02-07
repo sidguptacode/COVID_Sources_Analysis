@@ -1,0 +1,1 @@
+age_proportions_against_total <- get_prop_against_total(covid_cases_clean, cases_no_info, 'age_group', TRUE)

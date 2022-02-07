@@ -108,7 +108,8 @@ single_df_barplot <- function(df, xcol, ycol, title, xlab, ylab) {
       geom_bar(aes(y=df[[ycol]]), stat="identity", position ="identity", alpha=.5, fill='lightblue', color='lightblue4') + 
       ggtitle(title) +
       xlab(xlab) + 
-      ylab(ylab)
+      ylab(ylab) +
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
     return(barplot)
 }
 
@@ -165,7 +166,7 @@ normalize_wrt_other_df <- function(df1, ycol1, df2, ycol2) {
   return(df1_normalized)
 }
   
-normalize_dfs_and_barplot <- function(df1, ycol1, df2, ycol2, xcol, should_normalize_df1, should_normalize_df2) {
+normalize_dfs_and_barplot <- function(df1, ycol1, df2, ycol2, xcol, xlab, ylab,title, should_normalize_df1, should_normalize_df2) {
   ###   Intakes two dataframes, normalizes their values, and plots a stacked-bar-chart.
   ###   Arguments and preconditions:
   ###   df1: a tibble dataframe
@@ -187,42 +188,20 @@ normalize_dfs_and_barplot <- function(df1, ycol1, df2, ycol2, xcol, should_norma
     df2_max = max(df2[[ycol2]])
     df2_normalized[[ycol2]] = (df2_normalized[[ycol2]] - df2_min) / df2_max
   }
+  
   # Now that both dfs are comparable, we plot a stacked-bar-chart
   ggplot(data=df1_normalized, aes(.data[[xcol]])) +
     geom_bar(aes(y=df1_normalized[[ycol1]]), stat="identity", position ="identity", alpha=.5, fill='lightblue', color='lightblue4') +
     geom_bar(aes(y=df2_normalized[[ycol2]]), stat="identity", position="identity", alpha=.3, fill='pink', color='red') +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    ggtitle(title) +
+    xlab(xlab) + 
+    ylab(ylab)
     ylim(0,1)
 }
 
 
 
-
-
-
-##################### TO DELETE ##################################
-sort_dataframe_by_date <- function(df) {
-  ###   Sorts a dataframe by a (year, month) date column.
-  ###   Preconditions: the (year, month) date column is "reported_date"
-  sorted_df_by_date <-
-    df |>
-    # To make the '(year, month)' date objects, we just let the day = 1.
-    mutate(reported_date = as_date(paste(reported_date,"-01",sep=""))) |>
-    # This sorts the dataframe by the date.
-    arrange(reported_date) |>
-    # Now that the dataframe is sorted, we can remove the 'day' information.  
-    mutate(reported_date = format(reported_date, "%Y-%m"))
-  return(sorted_df_by_date)
-}
-print_col_proportions <- function(table) {
-  ### Intakes a table, and prints the proportion each values
-  ### takes in a column of the table.
-  ### Preconditions: table is a dataframe.
-  for (col in names(table)) {
-    col_proportions <- get_col_proportions(table, col)
-    print(col_proportions)
-  }
-}
 
 
 

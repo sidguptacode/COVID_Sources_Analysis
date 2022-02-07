@@ -85,19 +85,27 @@ source(here::here("scripts/03-monthly_cases_analysis.R"), local = knitr::knit_gl
 ```
 
 ```{r cases-timepoints-plot, echo = FALSE, message=FALSE, fig.cap="TODO", warning=FALSE}
-normalize_dfs_and_barplot(counts_for_reported_date, "n", reported_data_noinfo_prop_sorted, "prop", "reported_date", TRUE, TRUE) 
+normalize_dfs_and_barplot(counts_for_reported_date, "n", reported_data_noinfo_prop_sorted, "prop", "reported_date", "Month and year", " Normalized case count / proportion", "Lowest-30 neighbourhoods for responding with no source information against income index", TRUE, TRUE) 
+```
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+source(here::here("scripts/04-age_analysis.R"), local = knitr::knit_global())
+```
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+single_df_barplot(age_proportions_against_total, "age_group", "prop", "Age Group", "Proportion of cases with no source", "Age demographics of cases with no source")
 ```
 
 ```{r, echo = FALSE, message=FALSE}
-source(here::here("scripts/04-neighbourhood_income_analysis.R"), local = knitr::knit_global())
+source(here::here("scripts/05-neighbourhood_income_analysis.R"), local = knitr::knit_global())
 ```
 
 ```{r top-no-info-plot, echo = FALSE, message=FALSE, fig.cap="TODO", warning=FALSE}
-normalize_dfs_and_barplot(top_noinfo_neighbs, "prop", income_data_of_topneighbs_df, "income_index", "neighbourhood_name", FALSE, FALSE) 
+normalize_dfs_and_barplot(top_noinfo_neighbs, "prop", income_data_of_topneighbs_df, "income_index", "neighbourhood_name","Neighbourhood", "Normalized income index / proportion", "Top-30 neighbourhoods for responding with no source information against income index", FALSE, FALSE) 
 ```
 
 ```{r bot-no-info-plot, echo = FALSE, message=FALSE, fig.cap="TODO", warning=FALSE}
-normalize_dfs_and_barplot(bottom_noinfo_neighbs, "prop", income_data_of_botneighbs_df, "income_index", "neighbourhood_name", FALSE, FALSE) 
+normalize_dfs_and_barplot(bottom_noinfo_neighbs, "prop", income_data_of_botneighbs_df, "income_index", "neighbourhood_name", "Income Index", " Neighbourhood", "Bottom-30 neighbourhoods for responding with no source information against income index", FALSE, FALSE) 
 ```
 
 
